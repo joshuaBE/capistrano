@@ -44,55 +44,11 @@ module Capistrano
         # servers, and uncompresses it on each of them into the deployment
         # directory.
         def deploy!
-          if copy_cache
-            if File.exists?(copy_cache)
-              logger.debug "refreshing local cache to revision #{revision} at #{copy_cache}"
-              system(source.sync(revision, copy_cache))
-            else
-              logger.debug "preparing local cache at #{copy_cache}"
-              system(source.checkout(revision, copy_cache))
-            end
-
-            logger.debug "copying cache to deployment staging area #{destination}"
-            Dir.chdir(copy_cache) do
-              FileUtils.mkdir_p(destination)
-              queue = Dir.glob("*", File::FNM_DOTMATCH)
-              while queue.any?
-                item = queue.shift
-                name = File.basename(item)
-
-                next if name == "." || name == ".."
-                next if copy_exclude.any? { |pattern| File.fnmatch(pattern, item) }
-
-                if File.symlink?(item)
-                  FileUtils.ln_s(File.readlink(File.join(copy_cache, item)), File.join(destination, item))
-                elsif File.directory?(item)
-                  queue += Dir.glob("#{item}/*", File::FNM_DOTMATCH)
-                  FileUtils.mkdir(File.join(destination, item))
-                else
-                  FileUtils.ln(File.join(copy_cache, item), File.join(destination, item))
-                end
-              end
-            end
-          else
-            logger.debug "getting (via #{copy_strategy}) revision #{revision} to #{destination}"
-            system(command)
-
-            if copy_exclude.any?
-              logger.debug "processing exclusions..."
-              if copy_exclude.any?
-                copy_exclude.each do |pattern| 
-                  delete_list = Dir.glob(File.join(destination, pattern), File::FNM_DOTMATCH)
-                  # avoid the /.. trap that deletes the parent directories
-                  delete_list.delete_if { |dir| dir =~ /\/\.\.$/ }
-                  FileUtils.rm_rf(delete_list.compact)
-                end
-              end
-            end
-          end
-
-          logger.trace "compressing #{destination} to #{filename}"
-          Dir.chdir(tmpdir) { system(compress(File.basename(destination), File.basename(filename)).join(" ")) }
+	  if source.respond_to?(:exportarchive)
+	    source.exportarchive(revision, filename)
+	  else
+	    create_archived_file
+	  end
 
           upload(filename, remote_filename)
           run "cd #{configuration[:releases_path]} && #{decompress(remote_filename).join(" ")} && rm #{remote_filename}"
@@ -121,9 +77,78 @@ module Capistrano
 
         private
 
-	def make_revision
-          File.open(File.join(destination, "REVISION"), "w") { |f| f.puts(revision) }
-	end
+	  #
+	  # uses sync command to update or create a copy of the source code in directory #{destination}
+	  def update_copy_cache
+            if File.exists?(copy_cache)
+              logger.debug "refreshing local cache to revision #{revision} at #{copy_cache}"
+              system(source.sync(revision, copy_cache))
+            else
+              logger.debug "preparing local cache at #{copy_cache}"
+              system(source.checkout(revision, copy_cache))
+            end
+	    
+            logger.debug "copying cache to deployment staging area #{destination}"
+            Dir.chdir(copy_cache) do
+              FileUtils.mkdir_p(destination)
+              queue = Dir.glob("*", File::FNM_DOTMATCH)
+              while queue.any?
+                item = queue.shift
+                name = File.basename(item)
+		
+                next if name == "." || name == ".."
+                next if copy_exclude.any? { |pattern| File.fnmatch(pattern, item) }
+		
+                if File.symlink?(item)
+                  FileUtils.ln_s(File.readlink(File.join(copy_cache, item)), File.join(destination, item))
+                elsif File.directory?(item)
+                  queue += Dir.glob("#{item}/*", File::FNM_DOTMATCH)
+                  FileUtils.mkdir(File.join(destination, item))
+                else
+                  FileUtils.ln(File.join(copy_cache, item), File.join(destination, item))
+                end
+              end
+            end
+	  end
+
+	  #
+	  # uses command to create a copy of the source code in directory #{destination}
+	  def update_without_cache
+            logger.debug "getting (via #{copy_strategy}) revision #{revision} to #{destination}"
+            system(command)
+
+            if copy_exclude.any?
+              logger.debug "processing exclusions..."
+              if copy_exclude.any?
+                copy_exclude.each do |pattern| 
+                  delete_list = Dir.glob(File.join(destination, pattern), File::FNM_DOTMATCH)
+                  # avoid the /.. trap that deletes the parent directories
+                  delete_list.delete_if { |dir| dir =~ /\/\.\.$/ }
+                  FileUtils.rm_rf(delete_list.compact)
+                end
+              end
+            end
+	  end
+
+	  #
+	  # Updates the file "REVISION" in the source code.
+ 	  def make_revision
+            File.open(File.join(destination, "REVISION"), "w") { |f| f.puts(revision) }
+	  end
+
+	  # Places an archived copy of the source code into #{destination}, using the
+	  # cached copy if configured.
+	  def create_archived_file
+	    if copy_cache
+	      update_copy_cache
+	    else
+	      update_without_cache
+	    end
+	    make_revision
+
+	    logger.trace "compressing #{destination} to #{filename}"
+	    Dir.chdir(tmpdir) { system(compress(File.basename(destination), File.basename(filename)).join(" ")) }
+	  end
 
           # Specify patterns to exclude from the copy. This is only valid
           # when using a local cache.
