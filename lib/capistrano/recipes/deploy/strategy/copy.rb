@@ -91,8 +91,6 @@ module Capistrano
             end
           end
 
-          File.open(File.join(destination, "REVISION"), "w") { |f| f.puts(revision) }
-
           logger.trace "compressing #{destination} to #{filename}"
           Dir.chdir(tmpdir) { system(compress(File.basename(destination), File.basename(filename)).join(" ")) }
 
@@ -122,6 +120,10 @@ module Capistrano
         end
 
         private
+
+	def make_revision
+          File.open(File.join(destination, "REVISION"), "w") { |f| f.puts(revision) }
+	end
 
           # Specify patterns to exclude from the copy. This is only valid
           # when using a local cache.
