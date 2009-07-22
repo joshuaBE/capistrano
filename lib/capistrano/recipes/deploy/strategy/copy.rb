@@ -45,7 +45,7 @@ module Capistrano
         # directory.
         def deploy!
 	  if source.respond_to?(:exportarchive)
-	    source.exportarchive(revision, filename)
+	    system(source.exportarchive(revision, destination, filename))
 	  else
 	    create_archived_file
 	  end

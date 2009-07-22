@@ -165,6 +165,36 @@ module Capistrano
           checkout(revision, destination) << " && rm -Rf #{destination}/.git"
         end
 
+	def exportarchive(revision, destination, filename)
+          git    = command
+          remote = origin
+
+          args = []
+	  args << "-s"
+          args << "-o #{remote}" unless remote == 'origin'
+          if depth = configuration[:git_shallow_clone]
+            args << "--depth #{depth}"
+          end
+
+          execute = []
+          if args.empty?
+            execute << "#{git} clone #{verbose} #{configuration[:repository]} #{destination}"
+          else
+            execute << "#{git} clone #{verbose} #{args.join(' ')} #{configuration[:repository]} #{destination}"
+          end
+
+          if configuration[:git_enable_submodules]
+            execute << "#{git} submodule #{verbose} init"
+            execute << "#{git} submodule #{verbose} sync"
+            execute << "#{git} submodule #{verbose} update"
+          end
+
+          # checkout into a local branch rather than a detached HEAD
+          execute << "cd #{destination} && #{git} archive --format=tgz #{revision} | gzip >#{filename}"
+          
+          execute.join(" && ")
+	end
+
         # Merges the changes to 'head' since the last fetch, for remote_cache
         # deployment strategy
         def sync(revision, destination)

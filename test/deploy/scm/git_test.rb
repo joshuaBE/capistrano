@@ -43,6 +43,31 @@ class DeploySCMGitTest < Test::Unit::TestCase
     assert_equal "#{git} clone -q -s git@somehost.com:project.git /var/www && cd /var/www && #{git} checkout -q -b deploy #{rev} && #{git} submodule -q init && #{git} submodule -q sync && #{git} submodule -q update", @source.checkout(rev, dest)
   end
 
+  def test_export
+    @config[:repository] = "git@somehost.com:project.git"
+    dest = "/var/www"
+    rev = 'c2d9e79'
+    assert_equal "git clone -q -s git@somehost.com:project.git /var/www && cd /var/www && git checkout -q -b deploy #{rev} && rm -Rf /var/www/.git", @source.export(rev, dest)
+
+    # With :scm_command
+    git = "/opt/local/bin/git"
+    @config[:scm_command] = git
+    assert_equal "#{git} clone -q -s git@somehost.com:project.git /var/www && cd /var/www && #{git} checkout -q -b deploy #{rev} && rm -Rf /var/www/.git", @source.export(rev, dest)
+  end
+
+  def test_exportarchive
+    @config[:repository] = "git@somehost.com:project.git"
+    dest = "/var/www"
+    file = "/tmp/myfoo.tgz"
+    rev = 'c2d9e79'
+    assert_equal "git clone -q -s git@somehost.com:project.git /var/www && cd /var/www && git archive --format=tgz c2d9e79 | gzip >/tmp/myfoo.tgz", @source.exportarchive(rev, dest, file)
+
+    # With :scm_command
+    git = "/opt/local/bin/git"
+    @config[:scm_command] = git
+    assert_equal "#{git} clone -q -s git@somehost.com:project.git /var/www && cd /var/www && #{git} archive --format=tgz c2d9e79 | gzip >/tmp/myfoo.tgz", @source.exportarchive(rev, dest, file)
+  end
+
   def test_checkout_with_verbose_should_not_use_q_switch
     @config[:repository] = "git@somehost.com:project.git"
     @config[:scm_verbose] = true
