@@ -31,16 +31,16 @@ class DeploySCMGitTest < Test::Unit::TestCase
     @config[:repository] = "git@somehost.com:project.git"
     dest = "/var/www"
     rev = 'c2d9e79'
-    assert_equal "git clone -q git@somehost.com:project.git /var/www && cd /var/www && git checkout -q -b deploy #{rev}", @source.checkout(rev, dest)
+    assert_equal "git clone -q -s git@somehost.com:project.git /var/www && cd /var/www && git checkout -q -b deploy #{rev}", @source.checkout(rev, dest)
 
     # With :scm_command
     git = "/opt/local/bin/git"
     @config[:scm_command] = git
-    assert_equal "#{git} clone -q git@somehost.com:project.git /var/www && cd /var/www && #{git} checkout -q -b deploy #{rev}", @source.checkout(rev, dest)
+    assert_equal "#{git} clone -q -s git@somehost.com:project.git /var/www && cd /var/www && #{git} checkout -q -b deploy #{rev}", @source.checkout(rev, dest)
 
     # with submodules
     @config[:git_enable_submodules] = true
-    assert_equal "#{git} clone -q git@somehost.com:project.git /var/www && cd /var/www && #{git} checkout -q -b deploy #{rev} && #{git} submodule -q init && #{git} submodule -q sync && #{git} submodule -q update", @source.checkout(rev, dest)
+    assert_equal "#{git} clone -q -s git@somehost.com:project.git /var/www && cd /var/www && #{git} checkout -q -b deploy #{rev} && #{git} submodule -q init && #{git} submodule -q sync && #{git} submodule -q update", @source.checkout(rev, dest)
   end
 
   def test_checkout_with_verbose_should_not_use_q_switch
@@ -48,7 +48,7 @@ class DeploySCMGitTest < Test::Unit::TestCase
     @config[:scm_verbose] = true
     dest = "/var/www"
     rev = 'c2d9e79'
-    assert_equal "git clone  git@somehost.com:project.git /var/www && cd /var/www && git checkout  -b deploy #{rev}", @source.checkout(rev, dest)
+    assert_equal "git clone  -s git@somehost.com:project.git /var/www && cd /var/www && git checkout  -b deploy #{rev}", @source.checkout(rev, dest)
   end
 
   def test_diff
@@ -121,7 +121,7 @@ class DeploySCMGitTest < Test::Unit::TestCase
     @config[:git_shallow_clone] = 1
     dest = "/var/www"
     rev = 'c2d9e79'
-    assert_equal "git clone -q --depth 1 git@somehost.com:project.git /var/www && cd /var/www && git checkout -q -b deploy #{rev}", @source.checkout(rev, dest)
+    assert_equal "git clone -q -s --depth 1 git@somehost.com:project.git /var/www && cd /var/www && git checkout -q -b deploy #{rev}", @source.checkout(rev, dest)
   end
 
   def test_remote_clone
@@ -129,7 +129,7 @@ class DeploySCMGitTest < Test::Unit::TestCase
     @config[:remote] = "username"
     dest = "/var/www"
     rev = 'c2d9e79'
-    assert_equal "git clone -q -o username git@somehost.com:project.git /var/www && cd /var/www && git checkout -q -b deploy #{rev}", @source.checkout(rev, dest)
+    assert_equal "git clone -q -s -o username git@somehost.com:project.git /var/www && cd /var/www && git checkout -q -b deploy #{rev}", @source.checkout(rev, dest)
   end
 
   def test_remote_clone_with_submodules
