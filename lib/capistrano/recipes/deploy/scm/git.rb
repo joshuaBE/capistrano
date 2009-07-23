@@ -189,8 +189,10 @@ module Capistrano
             execute << "#{git} submodule #{verbose} update"
           end
 
-          # checkout into a local branch rather than a detached HEAD
-          execute << "cd #{destination} && #{git} archive --format=tgz #{revision} | gzip >#{filename}"
+	  release_name = File.basename(destination)
+
+          # the trailing / on release name is important!
+          execute << "cd #{destination} && #{git} archive --format=tar --prefix=#{release_name}/ #{revision} | gzip >#{filename}"
           
           execute.join(" && ")
 	end

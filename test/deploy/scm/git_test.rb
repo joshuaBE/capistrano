@@ -60,12 +60,12 @@ class DeploySCMGitTest < Test::Unit::TestCase
     dest = "/var/www"
     file = "/tmp/myfoo.tgz"
     rev = 'c2d9e79'
-    assert_equal "git clone -q -s git@somehost.com:project.git /var/www && cd /var/www && git archive --format=tgz c2d9e79 | gzip >/tmp/myfoo.tgz", @source.exportarchive(rev, dest, file)
+    assert_equal "git clone -q -s git@somehost.com:project.git /var/www && cd /var/www && git archive --format=tar --prefix=www/ c2d9e79 | gzip >/tmp/myfoo.tgz", @source.exportarchive(rev, dest, file)
 
     # With :scm_command
     git = "/opt/local/bin/git"
     @config[:scm_command] = git
-    assert_equal "#{git} clone -q -s git@somehost.com:project.git /var/www && cd /var/www && #{git} archive --format=tgz c2d9e79 | gzip >/tmp/myfoo.tgz", @source.exportarchive(rev, dest, file)
+    assert_equal "#{git} clone -q -s git@somehost.com:project.git /var/www && cd /var/www && #{git} archive --format=tar --prefix=www/ c2d9e79 | gzip >/tmp/myfoo.tgz", @source.exportarchive(rev, dest, file)
   end
 
   def test_checkout_with_verbose_should_not_use_q_switch
