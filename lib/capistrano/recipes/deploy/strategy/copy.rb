@@ -44,7 +44,7 @@ module Capistrano
         # servers, and uncompresses it on each of them into the deployment
         # directory.
         def deploy!
-	  if source.respond_to?(:exportarchive)
+	  if copy_strategy == :export && source.respond_to?(:exportarchive)
 	    system(source.exportarchive(revision, destination, filename))
 	  else
 	    create_archived_file
