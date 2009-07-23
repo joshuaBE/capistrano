@@ -1,0 +1,12 @@
+#!/usr/bin/ruby -I /home/mcr/T/capistrano:/home/mcr/T/capistrano/lib
+
+# this script can be used to run the cap command without
+# installing it. 
+# You will need to edit the -I line above, alas in order to run cap
+# from another direectory, such as your project directory.
+
+require 'rubygems'
+require 'ruby-debug'
+
+require 'capistrano/cli'
+Capistrano::CLI.execute
