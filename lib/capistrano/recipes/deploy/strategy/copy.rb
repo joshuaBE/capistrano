@@ -156,11 +156,17 @@ module Capistrano
             @copy_exclude ||= Array(configuration.fetch(:copy_exclude, []))
           end
 
+          # Returns a directory in which to put the released code.
+          def destination
+            @destination ||= File.join(tmpdir, release_name)
+          end
+
           # Returns the basename of the release_path, which will be used to
           # name the local copy and archive file.
-          def destination
-            @destination ||= File.join(tmpdir, File.basename(configuration[:release_path]))
+          def release_name
+            @release_name ||= File.basename(configuration[:release_path])
           end
+
 
           # Returns the value of the :copy_strategy variable, defaulting to
           # :checkout if it has not been set.
