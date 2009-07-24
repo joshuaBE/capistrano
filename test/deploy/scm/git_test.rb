@@ -163,7 +163,7 @@ class DeploySCMGitTest < Test::Unit::TestCase
     @config[:git_enable_submodules] = true
     dest = "/var/www"
     rev = 'c2d9e79'
-    assert_equal "git clone -q -o username git@somehost.com:project.git /var/www && cd /var/www && git checkout -q -b deploy #{rev} && git submodule -q init && git submodule -q sync && git submodule -q update", @source.checkout(rev, dest)
+    assert_equal "git clone -q -s -o username git@somehost.com:project.git /var/www && cd /var/www && git checkout -q -b deploy #{rev} && git submodule -q init && git submodule -q sync && git submodule -q update", @source.checkout(rev, dest)
   end
 
   # Tests from base_test.rb, makin' sure we didn't break anything up there!
