@@ -1,8 +1,15 @@
 require 'capistrano/recipes/deploy/strategy/base'
+require 'capistrano/dpkg'
 require 'fileutils'
 require 'tempfile'  # Dir.tmpdir
 
 module Capistrano
+  class Configuration
+    module Connections
+      class DpkgConnectionFactory
+      end
+    end
+  end
   module Deploy
     module Strategy
 
@@ -11,6 +18,9 @@ module Capistrano
       # than communicate directly with the remote system.
 
       class Dpkg < Base
+
+	include Capistrano::DpkgCode
+
         def deploy!
 	  debian_dir=File.join(package_dir, "DEBIAN")
 	  FileUtils.mkdir_p(debian_dir)
@@ -34,9 +44,17 @@ module Capistrano
 	  logger.debug "getting (via :export) revision #{revision} to #{destination}"
 	  system(command)
 
-	  # this needs to be deferred until after finalize_update
-	  system("cd #{package_dir}/.. && fakeroot -u sh -c 'chown -f -R root #{package_dir}; dpkg-deb -b #{release_name} #{release_name}.deb' " )
+	end
 
+	def finish!
+	  Capistrano::Configuration::Connections::DpkgPostinstChannel.close_all
+
+	  sleep(1)
+
+	  system("cd #{package_dir}/.. && fakeroot -u sh -c 'chown -f -R root #{package_dir}; dpkg-deb -b #{release_name} #{release_name}.deb' " )
+	ensure
+	  system("mv #{package_dir}/../#{release_name}.deb .")
+	  system("rm -rf #{package_dir}")
 	end
 
         protected
@@ -64,12 +82,6 @@ module Capistrano
           def destination
             @destination ||= File.join(package_dir, deploy_dir, release_name)
           end
-	  
-          # The directory to which the copy should be checked out
-          def tmpdir
-            @tmpdir ||= configuration[:copy_dir] || Dir.tmpdir
-          end
-
       end
 
     end

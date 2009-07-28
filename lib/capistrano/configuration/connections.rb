@@ -2,6 +2,7 @@ require 'enumerator'
 require 'net/ssh/gateway'
 require 'capistrano/ssh'
 require 'capistrano/errors'
+require 'capistrano/dpkg'
 
 module Capistrano
   class Configuration
@@ -86,7 +87,11 @@ module Capistrano
       # establish connections to servers defined via ServerDefinition objects.
       def connection_factory
         @connection_factory ||= begin
-          if exists?(:gateway)
+  	  if exists?(:deploy_via) && fetch(:deploy_via) == :dpkg
+	    logger.debug "faking connection to gateway, via dpkg postinst"
+            DpkgConnectionFactory.new(self)
+				    
+          elsif exists?(:gateway)
             logger.debug "establishing connection to gateway `#{fetch(:gateway)}'"
             GatewayConnectionFactory.new(fetch(:gateway), self)
           else
