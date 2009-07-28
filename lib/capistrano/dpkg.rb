@@ -17,6 +17,19 @@ module Capistrano
     def release_name
       @release_name ||= configuration[:release_name]
     end
+
+    def package_version_name
+      l=revision.size
+      "#{application}-code-#{revision[0,7]}"
+    end
+
+    def maintainer
+      configuration[:maintainer] || "#{ENV['USER']}@#{ENV['HOST']}"
+    end
+
+    def package_name
+      "#{application}-code"
+    end
   end
 end
 

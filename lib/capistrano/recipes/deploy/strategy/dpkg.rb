@@ -31,13 +31,13 @@ module Capistrano
 	  ver = "1.0." + versionnum
 	  
 	  File.open(control, "w") do |f|
-	    f.puts "Package: simtone-vsp-spartan-code\n"
+	    f.puts "Package: #{package_version_name}\n"
 	    f.puts "Version: #{ver}\n"
 	    f.puts "Section: capistrano\n"
 	    f.puts "Priority: optional\n"
 	    f.puts "Architecture: all\n"
-	    f.puts "Provides: simtone-vsp-spartan-code\n"
-	    f.puts "Maintainer: <ptadmin@simtone.net>\n"
+	    f.puts "Provides: #{package_name}\n"
+	    f.puts "Maintainer: #{maintainer}\n"
 	    f.puts "Description: This was packaged automatically from #{revision}.\n"
 	  end
 
@@ -53,11 +53,13 @@ module Capistrano
 
 	  system("cd #{package_dir}/.. && fakeroot -u sh -c 'chown -f -R root #{package_dir}; dpkg-deb -b #{release_name} #{release_name}.deb' " )
 	ensure
-	  system("mv #{package_dir}/../#{release_name}.deb .")
+	  system("mv #{package_dir}/../#{release_name}.deb #{package_version_name}.deb")
+	  system("echo #{package_version_name}.deb >deployed-deb-name.txt")
 	  system("rm -rf #{package_dir}")
 	end
 
         protected
+
 
           # Returns the SCM's export command for the revision to deploy.
           def command
