@@ -152,6 +152,7 @@ namespace :deploy do
   task :default do
     update
     restart
+    strategy.finish!
   end
 
   desc <<-DESC
