@@ -5,4 +5,5 @@ pkg
 *.patch
 *.gem
 *.sh
+*~
 .DS_Store
