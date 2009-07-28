@@ -33,6 +33,10 @@ module Capistrano
             d.remote.writable(configuration[:releases_path]).or("You do not have permissions to write to `#{configuration[:releases_path]}'.")
           end
         end
+
+	def finish!
+	  # nothing in the base.
+	end
           
         protected
 
