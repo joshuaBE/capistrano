@@ -32,7 +32,7 @@ module Capistrano
 	  
 	  File.open(control, "w") do |f|
 	    f.puts "Package: #{package_version_name}\n"
-	    f.puts "Version: #{ver}\n"
+	    f.puts "Version: #{revision}-#{ver}\n"
 	    f.puts "Section: capistrano\n"
 	    f.puts "Priority: optional\n"
 	    f.puts "Architecture: all\n"
@@ -82,7 +82,7 @@ module Capistrano
 	  end
 
           def destination
-            @destination ||= File.join(package_dir, deploy_dir, release_name)
+            @destination ||= File.join(package_dir, release_path)
           end
       end
 
