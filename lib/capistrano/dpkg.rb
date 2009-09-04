@@ -18,9 +18,18 @@ module Capistrano
       @release_name ||= configuration[:release_name]
     end
 
+    def short_revision_name
+      case revision.class
+      when String
+	revision[0,7]
+      when Fixnum
+	revision.to_s
+      end
+    end
+      
     def package_version_name
       l=revision.size
-      "#{application}-code-#{revision[0,7]}"
+      "#{application}-code-#{release_name}-#{short_revision_name}"
     end
 
     def maintainer
