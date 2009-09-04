@@ -24,6 +24,8 @@ module Capistrano
 	revision[0,7]
       when Fixnum
 	revision.to_s
+      else
+	revision.to_s
       end
     end
       
