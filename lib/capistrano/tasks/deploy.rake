@@ -61,8 +61,8 @@ namespace :deploy do
   namespace :check do
     desc "Check shared and release directories exist"
     task :directories do
-      on release_roles :all do
-        execute :mkdir, "-p", shared_path, releases_path
+      on release_roles :all do |role|
+        execute :mkdir, "-p", shared_path, releases_path(role)
       end
     end
 
@@ -99,10 +99,10 @@ namespace :deploy do
   namespace :symlink do
     desc "Symlink release to current"
     task :release do
-      on release_roles :all do
-        tmp_current_path = release_path.parent.join(current_path.basename)
-        execute :ln, "-s", release_path, tmp_current_path
-        execute :mv, tmp_current_path, current_path.parent
+      on release_roles :all do |role|
+        tmp_current_path = release_path(role).parent.join(current_path(role).basename)
+        execute :ln, "-s", release_path(role), tmp_current_path
+        execute :mv, tmp_current_path, current_path(role).parent
       end
     end
 
@@ -115,12 +115,12 @@ namespace :deploy do
     desc "Symlink linked directories"
     task :linked_dirs do
       next unless any? :linked_dirs
-      on release_roles :all do
-        execute :mkdir, "-p", linked_dir_parents(release_path)
+      on release_roles :all do |role|
+        execute :mkdir, "-p", linked_dir_parents(release_path(role))
 
         fetch(:linked_dirs).each do |dir|
-          target = release_path.join(dir)
-          source = shared_path.join(dir)
+          target = release_path(role).join(dir)
+          source = shared_path(role).join(dir)
           next if test "[ -L #{target} ]"
           execute :rm, "-rf", target if test "[ -d #{target} ]"
           execute :ln, "-s", source, target
@@ -131,12 +131,12 @@ namespace :deploy do
     desc "Symlink linked files"
     task :linked_files do
       next unless any? :linked_files
-      on release_roles :all do
-        execute :mkdir, "-p", linked_file_dirs(release_path)
+      on release_roles :all do |role|
+        execute :mkdir, "-p", linked_file_dirs(release_path(role))
 
         fetch(:linked_files).each do |file|
-          target = release_path.join(file)
-          source = shared_path.join(file)
+          target = release_path(role).join(file)
+          source = shared_path(role).join(file)
           next if test "[ -L #{target} ]"
           execute :rm, target if test "[ -f #{target} ]"
           execute :ln, "-s", source, target
@@ -148,7 +148,7 @@ namespace :deploy do
   desc "Clean up old releases"
   task :cleanup do
     on release_roles :all do |host|
-      releases = capture(:ls, "-x", releases_path).split
+      releases = capture(:ls, "-x", releases_path(host)).split
       valid, invalid = releases.partition { |e| /^\d{14}$/ =~ e }
 
       warn t(:skip_cleanup, host: host.to_s) if invalid.any?
@@ -156,13 +156,13 @@ namespace :deploy do
       if valid.count >= fetch(:keep_releases)
         info t(:keeping_releases, host: host.to_s, keep_releases: fetch(:keep_releases), releases: valid.count)
         directories = (valid - valid.last(fetch(:keep_releases))).map do |release|
-          releases_path.join(release).to_s
+          releases_path(host).join(release).to_s
         end
         if test("[ -d #{current_path} ]")
-          current_release = capture(:readlink, current_path).to_s
-          if directories.include?(current_release)
+          current_release = capture(:readlink, current_path(host)).to_s
+          if directories.include?(current_release(host))
             warn t(:wont_delete_current_release, host: host.to_s)
-            directories.delete(current_release)
+            directories.delete(current_release(host))
           end
         else
           debug t(:no_current_release, host: host.to_s)
@@ -179,9 +179,9 @@ namespace :deploy do
 
   desc "Remove and archive rolled-back release."
   task :cleanup_rollback do
-    on release_roles(:all) do
-      last_release = capture(:ls, "-xt", releases_path).split.first
-      last_release_path = releases_path.join(last_release)
+    on release_roles(:all) do |host|
+      last_release = capture(:ls, "-xt", releases_path(host)).split.first
+      last_release_path = releases_path(host).join(last_release)
       if test "[ `readlink #{current_path}` != #{last_release_path} ]"
         execute :tar, "-czf",
                 deploy_path.join("rolled-back-release-#{last_release}.tar.gz"),
@@ -195,8 +195,8 @@ namespace :deploy do
 
   desc "Log details of the deploy"
   task :log_revision do
-    on release_roles(:all) do
-      within releases_path do
+    on release_roles(:all) do |host|
+      within releases_path(host) do
         execute :echo, %Q{"#{revision_log_message}" >> #{revision_log}}
       end
     end
@@ -210,12 +210,18 @@ namespace :deploy do
   end
 
   task :new_release_path do
-    set_release_path
+    timestamp = now
+
+    # must be each, not "on", because on creates ephermal
+    # roles that do not retain settings.
+    release_roles(:all).each do |role|
+      set_release_path(role, now)
+    end
   end
 
   task :rollback_release_path do
-    on release_roles(:all) do
-      releases = capture(:ls, "-xt", releases_path).split
+    on release_roles(:all) do |role|
+      releases = capture(:ls, "-xt", releases_path(role)).split
       if releases.count < 2
         error t(:cannot_rollback)
         exit 1
@@ -229,23 +235,23 @@ namespace :deploy do
       end
 
       last_release = releases[index]
-      set_release_path(last_release)
+      set_release_path(role, last_release)
       set(:rollback_timestamp, last_release)
     end
   end
 
   desc "Place a REVISION file with the current revision SHA in the current release path"
   task :set_current_revision  do
-    on release_roles(:all) do
-      within release_path do
+    on release_roles(:all) do |role|
+      within release_path(role) do
         execute :echo, "\"#{fetch(:current_revision)}\" >> REVISION"
       end
     end
   end
 
   task :set_previous_revision do
-    on release_roles(:all) do
-      target = release_path.join("REVISION")
+    on release_roles(:all) do |role|
+      target = release_path(role).join("REVISION")
       if test "[ -f #{target} ]"
         set(:previous_revision, capture(:cat, target, "2>/dev/null"))
       end

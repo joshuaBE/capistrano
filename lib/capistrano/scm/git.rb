@@ -30,8 +30,9 @@ class Capistrano::SCM::Git < Capistrano::SCM::Plugin
     eval_rakefile File.expand_path("../tasks/git.rake", __FILE__)
   end
 
-  def repo_mirror_exists?
-    backend.test " [ -f #{repo_path}/HEAD ] "
+  def repo_mirror_exists?(role = nil)
+    puts "looking for repo for host: #{role.hostname} #{repo_path(role)}"
+    backend.test " [ -f #{repo_path(role)}/HEAD ] "
   end
 
   def check_repo_is_reachable
@@ -58,13 +59,13 @@ class Capistrano::SCM::Git < Capistrano::SCM::Plugin
     end
   end
 
-  def archive_to_release_path
+  def archive_to_release_path(role)
     if (tree = fetch(:repo_tree))
       tree = tree.slice %r#^/?(.*?)/?$#, 1
       components = tree.split("/").size
-      git :archive, fetch(:branch), tree, "| #{SSHKit.config.command_map[:tar]} -x --strip-components #{components} -f - -C", release_path
+      git :archive, fetch(:branch), tree, "| #{SSHKit.config.command_map[:tar]} -x --strip-components #{components} -f - -C", release_path(role)
     else
-      git :archive, fetch(:branch), "| #{SSHKit.config.command_map[:tar]} -x -f - -C", release_path
+      git :archive, fetch(:branch), "| #{SSHKit.config.command_map[:tar]} -x -f - -C", release_path(role)
     end
   end
 

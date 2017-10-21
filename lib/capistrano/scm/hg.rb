@@ -33,7 +33,7 @@ class Capistrano::SCM::Hg < Capistrano::SCM::Plugin
     hg "pull"
   end
 
-  def archive_to_release_path
+  def archive_to_release_path(role)
     if (tree = fetch(:repo_tree))
       tree = tree.slice %r#^/?(.*?)/?$#, 1
       components = tree.split("/").size
@@ -41,8 +41,8 @@ class Capistrano::SCM::Hg < Capistrano::SCM::Plugin
 
       hg "archive -p . -I", tree, "--rev", fetch(:branch), temp_tar
 
-      backend.execute :mkdir, "-p", release_path
-      backend.execute :tar, "-x --strip-components #{components} -f", temp_tar, "-C", release_path
+      backend.execute :mkdir, "-p", release_path(role)
+      backend.execute :tar, "-x --strip-components #{components} -f", temp_tar, "-C", release_path(role)
       backend.execute :rm, temp_tar
     else
       hg "archive", release_path, "--rev", fetch(:branch)

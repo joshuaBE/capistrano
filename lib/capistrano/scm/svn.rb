@@ -40,8 +40,8 @@ class Capistrano::SCM::Svn < Capistrano::SCM::Plugin
     svn :update
   end
 
-  def archive_to_release_path
-    svn :export, "--force", ".", release_path
+  def archive_to_release_path(role)
+    svn :export, "--force", ".", release_path(role)
   end
 
   def fetch_revision

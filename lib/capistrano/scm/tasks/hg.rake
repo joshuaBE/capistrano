@@ -35,9 +35,9 @@ namespace :hg do
 
   desc "Copy repo to releases"
   task create_release: :'hg:update' do
-    on release_roles :all do
+    on release_roles :all do |role|
       within repo_path do
-        hg_plugin.archive_to_release_path
+        hg_plugin.archive_to_release_path(role)
       end
     end
   end

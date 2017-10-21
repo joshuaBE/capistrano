@@ -23,8 +23,9 @@ namespace :git do
 
   desc "Clone the repo to the cache"
   task clone: :'git:wrapper' do
-    on release_roles :all do
-      if git_plugin.repo_mirror_exists?
+    on release_roles :all do |role|
+      if git_plugin.repo_mirror_exists?(role)
+        puts "looking for repo for host: #{@host.hostname} #{repo_path}"
         info t(:mirror_exists, at: repo_path)
       else
         within deploy_path do
@@ -49,11 +50,13 @@ namespace :git do
 
   desc "Copy repo to releases"
   task create_release: :'git:update' do
-    on release_roles :all do
+    on release_roles :all do |role|
       with fetch(:git_environmental_variables) do
         within repo_path do
-          execute :mkdir, "-p", release_path
-          git_plugin.archive_to_release_path
+          set_release_path(role)
+          puts "release_path: #{release_path(role)}"
+          execute :mkdir, "-p", release_path(role)
+          git_plugin.archive_to_release_path(role)
         end
       end
     end
