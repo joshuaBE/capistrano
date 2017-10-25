@@ -160,9 +160,9 @@ namespace :deploy do
         end
         if test("[ -d #{current_path} ]")
           current_release = capture(:readlink, current_path(host)).to_s
-          if directories.include?(current_release(host))
+          if directories.include?(current_release)
             warn t(:wont_delete_current_release, host: host.to_s)
-            directories.delete(current_release(host))
+            directories.delete(current_release)
           end
         else
           debug t(:no_current_release, host: host.to_s)

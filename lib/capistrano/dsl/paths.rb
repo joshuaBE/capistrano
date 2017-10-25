@@ -66,6 +66,7 @@ module Capistrano
       end
 
       def shared_path(role = nil)
+        role = dig_up_role(role)
         deploy_path(role).join("shared")
       end
 
